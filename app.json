@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Signs NFC Writer",
+    "slug": "signs-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "deploymentTarget": "13.4",
+      "infoPlist": {
+        "NFCReaderUsageDescription": "This app needs NFC to write business review links to NFC tags",
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to find nearby businesses"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyDDfyo07pPKa4DYzWdkkVWAQYuba_T3zqo"
+      },
+      "bundleIdentifier": "com.anonymous.signs-mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "NFC",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.NFC",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "NFC",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.NFC"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDDfyo07pPKa4DYzWdkkVWAQYuba_T3zqo"
+        }
+      },
+      "package": "com.anonymous.signsmobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Signs NFC Writer to use your location to find nearby businesses."
+        }
+      ],
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "This app needs NFC to write business review links to NFC tags"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6870076a-f22c-4acc-bb44-34f08072d01e"
+      }
+    }
+  }
+}
