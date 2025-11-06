@@ -7,7 +7,8 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
-  ScrollView
+  ScrollView,
+  FlatList
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -164,6 +165,7 @@ export default function MapScreen({ navigation, onLogout }: any) {
             }}
             title={business.name}
             description={business.address}
+            onPress={() => handleMarkerPress(business)}
             onCalloutPress={() => handleMarkerPress(business)}
           />
         ))}
@@ -181,6 +183,29 @@ export default function MapScreen({ navigation, onLogout }: any) {
           <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
       </View>
+
+      {businesses.length > 0 && (
+        <View style={styles.listContainer}>
+          <FlatList
+            data={businesses}
+            keyExtractor={(item) => item.placeId}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.listItem}
+                onPress={() => handleMarkerPress(item)}
+              >
+                <View style={styles.listItemContent}>
+                  <Text style={styles.listItemName}>{item.name}</Text>
+                  <Text style={styles.listItemAddress} numberOfLines={1}>
+                    {item.address}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      )}
 
       <View style={styles.bottomBar}>
         <View style={styles.userInfo}>
@@ -240,6 +265,39 @@ const styles = StyleSheet.create({
   searchButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  listContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 10,
+    right: 10,
+    maxHeight: 200,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  listItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  listItemContent: {
+    flex: 1,
+  },
+  listItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  listItemAddress: {
+    fontSize: 12,
+    color: '#6b7280',
   },
   bottomBar: {
     backgroundColor: '#fff',

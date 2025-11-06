@@ -17,7 +17,8 @@
       "deploymentTarget": "13.4",
       "infoPlist": {
         "NFCReaderUsageDescription": "This app needs NFC to write business review links to NFC tags",
-        "NSLocationWhenInUseUsageDescription": "This app needs your location to find nearby businesses"
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to find nearby businesses",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDDfyo07pPKa4DYzWdkkVWAQYuba_T3zqo"
@@ -32,12 +33,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "NFC",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.NFC",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "NFC",
