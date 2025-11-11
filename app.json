@@ -1,12 +1,15 @@
 {
   "expo": {
-    "name": "Signs NFC Writer",
+    "name": "Review Signs NFC Programmer",
     "slug": "signs-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "runtimeVersion": "1.0.0",
     "sdkVersion": "54.0.0",
     "icon": "./assets/icon.png",
+    "primaryColor": "#3B82F6",
+    "description": "Write NFC tags for business review collection with Google Maps integration. Perfect for franchise partners managing customer feedback systems.",
+    "githubUrl": "https://github.com/dannyallport77/signs-mobile",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -24,7 +27,8 @@
       "config": {
         "googleMapsApiKey": "AIzaSyDDfyo07pPKa4DYzWdkkVWAQYuba_T3zqo"
       },
-      "bundleIdentifier": "com.dannyallport.signsnfc"
+      "bundleIdentifier": "com.dannyallport.signsnfc",
+      "appStoreUrl": "https://apps.apple.com/app/review-signs-nfc-programmer/id6755160639"
     },
     "android": {
       "adaptiveIcon": {
