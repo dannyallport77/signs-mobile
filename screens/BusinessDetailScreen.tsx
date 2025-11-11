@@ -7,7 +7,8 @@ import {
   ScrollView,
   Alert,
   Linking,
-  Platform
+  Platform,
+  AppState
 } from 'react-native';
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -82,9 +83,55 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
                   // Log the NFC tag write
                   await logNFCTag();
                   
+                  // Cancel NFC request before showing alert
+                  await NfcManager.cancelTechnologyRequest();
+                  setWriting(false);
+                  
+                  // Show success message with test instructions
                   Alert.alert(
-                    'Success!',
-                    `NFC tag has been written with review link for ${business.name}`
+                    'Success! 🎉',
+                    `NFC tag has been written with review link for ${business.name}\n\nNow tap OK to minimize the app and test the NFC tag by touching it with your phone.`,
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => {
+                          // Minimize the app by going to background
+                          if (Platform.OS === 'android') {
+                            // On Android, we can send the app to background
+                            AppState.currentState = 'background';
+                          }
+                          // Show a secondary alert with instructions
+                          setTimeout(() => {
+                            Alert.alert(
+                              'Test Your NFC Tag',
+                              'Touch the NFC tag you just wrote with your phone to test if it opens the review link correctly.\n\nDid the NFC tag work correctly?',
+                              [
+                                {
+                                  text: 'No, it failed',
+                                  style: 'cancel',
+                                  onPress: () => {
+                                    Alert.alert(
+                                      'Tag Test Failed',
+                                      'Please try writing the tag again or use a different NFC tag.'
+                                    );
+                                  }
+                                },
+                                {
+                                  text: 'Yes, it works!',
+                                  onPress: async () => {
+                                    await verifyNFCTag();
+                                    Alert.alert(
+                                      'Success! ✅',
+                                      'Your NFC tag has been verified and recorded in the system.'
+                                    );
+                                  }
+                                }
+                              ]
+                            );
+                          }, 500);
+                        }
+                      }
+                    ]
                   );
                 } else {
                   throw new Error('Failed to encode NDEF message');
@@ -92,7 +139,6 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
               } catch (ex) {
                 console.error('NFC write error:', ex);
                 Alert.alert('Write Failed', 'Failed to write to NFC tag. Please try again.');
-              } finally {
                 await NfcManager.cancelTechnologyRequest();
                 setWriting(false);
               }
@@ -126,11 +172,38 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
           reviewUrl: business.reviewUrl,
           latitude: business.location.lat,
           longitude: business.location.lng,
-          writtenBy: userData?.email || 'unknown'
+          writtenBy: userData?.email || 'unknown',
+          userId: userData?.id  // Add user ID for franchise tracking
         })
       });
     } catch (error) {
       console.error('Failed to log NFC tag:', error);
+      // Don't show error to user, just log it
+    }
+  };
+
+  const verifyNFCTag = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+
+      const response = await fetch(`${API_URL}/nfc-tags/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          placeId: business.placeId,
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to verify NFC tag:', data.error);
+      }
+    } catch (error) {
+      console.error('Failed to verify NFC tag:', error);
       // Don't show error to user, just log it
     }
   };

@@ -45,6 +45,7 @@ export default function MapScreen({ navigation, onLogout }: any) {
   const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [user, setUser] = useState<any>(null);
+  const [isListVisible, setIsListVisible] = useState(true);
 
   useEffect(() => {
     loadUser();
@@ -185,26 +186,42 @@ export default function MapScreen({ navigation, onLogout }: any) {
       </View>
 
       {businesses.length > 0 && (
-        <View style={styles.listContainer}>
-          <FlatList
-            data={businesses}
-            keyExtractor={(item) => item.placeId}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.listItem}
-                onPress={() => handleMarkerPress(item)}
-              >
-                <View style={styles.listItemContent}>
-                  <Text style={styles.listItemName}>{item.name}</Text>
-                  <Text style={styles.listItemAddress} numberOfLines={1}>
-                    {item.address}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
+        <>
+          <TouchableOpacity 
+            style={[
+              styles.toggleListButton,
+              !isListVisible && styles.toggleListButtonHidden
+            ]} 
+            onPress={() => setIsListVisible(!isListVisible)}
+          >
+            <Text style={styles.toggleListButtonText}>
+              {isListVisible ? '▼ Hide List' : '▲ Show List'}
+            </Text>
+          </TouchableOpacity>
+
+          {isListVisible && (
+            <View style={styles.listContainer}>
+              <FlatList
+                data={businesses}
+                keyExtractor={(item) => item.placeId}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.listItem}
+                    onPress={() => handleMarkerPress(item)}
+                  >
+                    <View style={styles.listItemContent}>
+                      <Text style={styles.listItemName}>{item.name}</Text>
+                      <Text style={styles.listItemAddress} numberOfLines={1}>
+                        {item.address}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
+        </>
       )}
 
       <View style={styles.bottomBar}>
@@ -265,6 +282,28 @@ const styles = StyleSheet.create({
   searchButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  toggleListButton: {
+    position: 'absolute',
+    bottom: 290,
+    right: 10,
+    backgroundColor: '#4f46e5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toggleListButtonHidden: {
+    bottom: 90,
+  },
+  toggleListButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
   },
   listContainer: {
     position: 'absolute',

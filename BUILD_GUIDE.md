@@ -1,8 +1,20 @@
 # Signs Mobile App - Build Guide
 
-## Problem with Local Build
+## Prerequisites
 
-The local iOS build is experiencing configuration issues with Expo Constants. The recommended solution is to use **EAS Build** (Expo's cloud build service).
+### Apple Developer Account (Required for iOS)
+
+✅ **You are enrolled as an Apple Developer!**
+
+To build and distribute iOS apps, you need an active Apple Developer Program membership ($99/year). You're all set!
+
+**What this gives you:**
+- Ability to build apps with EAS Build
+- TestFlight distribution for beta testing
+- App Store distribution
+- Push notifications and other advanced features
+
+---
 
 ## Recommended: EAS Build (Cloud Build)
 
@@ -22,26 +34,26 @@ eas login
 
 *Note: You'll need to create a free Expo account if you don't have one at https://expo.dev*
 
-### Step 3: Configure EAS
+### Step 3: Build for iOS (Development Build)
 
 ```bash
 cd "/Users/admin/Development/signs app/signs-mobile"
-eas build:configure
-```
-
-### Step 4: Build for iOS
-
-```bash
-# Development build (for testing)
 eas build --profile development --platform ios
 ```
 
-This will:
-- Build your app in the cloud (~15-20 minutes)
-- Give you a QR code when done
-- Install the app on your physical iOS device by scanning the QR
+**During the first build, EAS will:**
+1. Ask you to log in with your Apple ID (your Apple Developer account)
+2. Automatically generate or reuse provisioning profiles and certificates
+3. Store credentials securely in Expo's servers
+4. Build your app in the cloud (~15-20 minutes)
+5. Give you a QR code and download link when done
 
-### Step 5: Run the Development Server
+**To install on your device:**
+- Scan the QR code with your iPhone camera
+- Or open the link on your iPhone
+- Follow the installation prompts
+
+### Step 4: Run the Development Server
 
 Once the app is installed on your device:
 
@@ -75,6 +87,38 @@ This won't have Maps or NFC, but you can test:
 - Navigation
 - API calls
 - Business listing (in list view)
+
+---
+
+## Building for Production & App Store
+
+### Step 1: Create a Production Build
+
+```bash
+eas build --profile production --platform ios
+```
+
+This creates an optimized build for the App Store.
+
+### Step 2: Submit to App Store
+
+```bash
+eas submit --platform ios
+```
+
+**Or manually:**
+1. Download the `.ipa` file from the build
+2. Go to [App Store Connect](https://appstoreconnect.apple.com/)
+3. Create your app listing
+4. Upload the `.ipa` using Transporter app or Xcode
+
+### Step 3: TestFlight (Beta Testing)
+
+After submission, your app will automatically appear in TestFlight:
+1. Go to App Store Connect
+2. Select your app → TestFlight
+3. Add internal or external testers
+4. Share the TestFlight link with testers
 
 ---
 
@@ -118,22 +162,34 @@ eas submit --platform android
 ## Quick Start (Recommended Path)
 
 ```bash
-# 1. Install EAS CLI
+# 1. Install EAS CLI (if not already installed)
 npm install -g eas-cli
 
-# 2. Login
+# 2. Login to Expo
 eas login
 
-# 3. Build
+# 3. Navigate to project
 cd "/Users/admin/Development/signs app/signs-mobile"
+
+# 4. Build for iOS (development build)
 eas build --profile development --platform ios
 
-# 4. Wait for build (~20 min), install app on device via QR code
+# 5. Wait for build (~15-20 min)
+#    - You'll be prompted to log in with your Apple Developer account
+#    - EAS will handle all certificates and provisioning automatically
+#    - Install app on device via QR code when complete
 
-# 5. Start dev server
+# 6. Start development server
 npx expo start --dev-client
 
-# 6. Open installed app on your device
+# 7. Open the installed app on your device
+#    - It will connect to your dev server automatically
 ```
+
+**Your app is configured with:**
+- Bundle ID: `com.dannyallport.signsnfc`
+- App Name: Signs NFC Writer
+- NFC capabilities enabled
+- Google Maps integration
 
 This is the fastest path to a working app with all native features! 🚀

@@ -92,7 +92,9 @@ npx expo start --dev-client
 Create a `.env` file in the root directory:
 
 ```
-EXPO_PUBLIC_API_URL=http://192.168.1.110:3000/api
+```bash
+EXPO_PUBLIC_API_URL=https://review-signs.co.uk/api
+```
 ```
 
 Replace `192.168.1.110` with your computer's local IP address (same network as your phone).
