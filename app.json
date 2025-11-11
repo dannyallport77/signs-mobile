@@ -61,12 +61,6 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Signs NFC Writer to use your location to find nearby businesses."
         }
-      ],
-      [
-        "react-native-nfc-manager",
-        {
-          "nfcPermission": "This app needs NFC to write business review links to NFC tags"
-        }
       ]
     ],
     "extra": {
