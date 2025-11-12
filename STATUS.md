@@ -1,5 +1,13 @@
 # Sales Tracking Implementation Status
 
+## 👥 User Roles
+
+The mobile app supports two user roles:
+- **Manager**: Can view analytics, manage sign types, and perform all sales operations
+- **Sales Staff (User)**: Can write NFC tags, record sales, and view their own transaction history
+
+> **Note**: Admin and franchisee functionality will be handled in a separate web-based admin application.
+
 ## ✅ Completed Features
 
 ### 1. User Flow Integration

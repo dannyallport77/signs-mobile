@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Display review ratings and counts
   - Phone numbers and website links
 - **User Authentication**:
-  - Secure login system for franchise partners
+  - Secure login system with role-based access
+  - Manager and sales staff user roles
   - Email and password authentication
   - Session management
 - **iOS Features**:

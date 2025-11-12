@@ -1,6 +1,6 @@
 # Review Signs NFC Programmer
 
-A React Native mobile application for writing NFC tags with business review links. Perfect for franchise partners managing customer feedback systems with Google Maps integration.
+A React Native mobile application for writing NFC tags with business review links. Mobile app for sales staff to manage customer feedback systems with Google Maps integration.
 
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue)](https://apps.apple.com/app/review-signs-nfc-programmer/id6755160639)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/dannyallport77/signs-mobile)
@@ -17,7 +17,7 @@ A React Native mobile application for writing NFC tags with business review link
   - Phone numbers and websites
   - Operating hours
   - Review ratings and counts
-- **User Authentication**: Secure login system for franchise partners
+- **User Authentication**: Secure login system with role-based access (Manager, Sales Staff)
 - **Cross-Platform**: Built with React Native and Expo for iOS and Android
 
 ## 🛠 Tech Stack

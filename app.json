@@ -8,7 +8,7 @@
     "sdkVersion": "54.0.0",
     "icon": "./assets/icon.png",
     "primaryColor": "#3B82F6",
-    "description": "Write NFC tags for business review collection with Google Maps integration. Perfect for franchise partners managing customer feedback systems.",
+    "description": "Write NFC tags for business review collection with Google Maps integration. Mobile app for sales staff to manage customer feedback systems.",
     "githubUrl": "https://github.com/dannyallport77/signs-mobile",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
