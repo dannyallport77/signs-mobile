@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './screens/LoginScreen';
 import MapScreen from './screens/MapScreen';
 import BusinessDetailScreen from './screens/BusinessDetailScreen';
+import SignTypeSelectionScreen from './screens/SignTypeSelectionScreen';
+import EraseTagScreen from './screens/EraseTagScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -67,6 +69,16 @@ export default function App() {
               name="BusinessDetail" 
               component={BusinessDetailScreen}
               options={{ title: 'Business Details' }}
+            />
+            <Stack.Screen 
+              name="SignTypeSelection" 
+              component={SignTypeSelectionScreen}
+              options={{ title: 'Select Sign Type' }}
+            />
+            <Stack.Screen 
+              name="EraseTag" 
+              component={EraseTagScreen}
+              options={{ title: 'Erase NFC Tag' }}
             />
           </>
         )}
