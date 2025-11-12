@@ -3,6 +3,10 @@
 A React Native mobile application for writing NFC tags with business review links. Perfect for franchise partners managing customer feedback systems with Google Maps integration.
 
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue)](https://apps.apple.com/app/review-signs-nfc-programmer/id6755160639)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/dannyallport77/signs-mobile)
+[![Status](https://img.shields.io/badge/status-In%20Review-yellow.svg)](https://appstoreconnect.apple.com)
+
+> **📱 App Status**: Currently under review by Apple. Submitted November 12, 2025.
 
 ## 📱 Features
 
@@ -97,11 +101,46 @@ eas build --profile production --platform ios
 
 ## 🚢 Deployment
 
-### Submit to App Store
+### App Store Submission Status
+
+**Current Version**: 1.0.0 (Build 1)
+**Status**: Waiting for Review
+**Submitted**: November 12, 2025
+**App ID**: 6755160639
+
+### Building for Production
 
 ```bash
-eas submit --platform ios --latest
+# Build for iOS
+eas build --platform ios --profile production
+
+# Check build status
+eas build:list --platform ios
 ```
+
+### Submitting to App Store
+
+```bash
+# Submit latest build
+eas submit --platform ios --latest
+
+# Or submit specific build
+eas submit --platform ios --id BUILD_ID
+```
+
+### TestFlight Beta Testing
+
+To distribute your app via TestFlight for beta testing:
+
+1. Build with production profile (already done)
+2. Submit to App Store Connect (triggers TestFlight availability)
+3. Add beta testers in App Store Connect → TestFlight
+4. Testers will receive an invitation email
+
+**TestFlight Benefits**:
+- Test with up to 10,000 external testers
+- Get feedback before public release
+- No review required for internal testers
 
 ## 📱 App Structure
 
