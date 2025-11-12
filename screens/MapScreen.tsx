@@ -119,7 +119,7 @@ export default function MapScreen({ navigation, onLogout }: any) {
   };
 
   const handleMarkerPress = (business: Business) => {
-    navigation.navigate('BusinessDetail', { business });
+    navigation.navigate('SignTypeSelection', { business });
   };
 
   const handleSearch = () => {

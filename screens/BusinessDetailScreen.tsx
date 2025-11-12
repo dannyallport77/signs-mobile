@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SalePriceInputModal from '../components/SalePriceInputModal';
+import { SignType, Transaction } from '../types';
+import { transactionService } from '../services/transactionService';
 
 // API URL - use environment variable or default to network IP
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.110:3000/api';
@@ -19,6 +22,21 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.110:3000/ap
 export default function BusinessDetailScreen({ route, navigation }: any) {
   const { business } = route.params;
   const [writing, setWriting] = useState(false);
+  const [showSalePriceModal, setShowSalePriceModal] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  const [signType, setSignType] = useState<SignType | null>(route.params.selectedSignType || null);
+
+  // Redirect to sign type selection if no sign type is selected
+  useEffect(() => {
+    if (!signType) {
+      navigation.navigate('SignTypeSelection', {
+        business,
+        onSelectSignType: (type: SignType) => {
+          setSignType(type);
+        }
+      });
+    }
+  }, []);
 
   const writeNFC = async () => {
     if (Platform.OS === 'web') {
@@ -80,59 +98,30 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
                 if (bytes) {
                   await NfcManager.ndefHandler.writeNdefMessage(bytes);
                   
-                  // Log the NFC tag write
-                  await logNFCTag();
+                  // Create pending transaction
+                  const user = await AsyncStorage.getItem('user');
+                  const userData = user ? JSON.parse(user) : null;
+                  
+                  const transaction = await transactionService.create({
+                    signTypeId: signType!.id,
+                    businessName: business.name,
+                    businessAddress: business.address,
+                    placeId: business.placeId,
+                    reviewUrl: business.reviewUrl,
+                    locationLat: business.location.lat,
+                    locationLng: business.location.lng,
+                    status: 'pending',
+                    userId: userData?.id
+                  });
+                  
+                  setCurrentTransaction(transaction);
                   
                   // Cancel NFC request before showing alert
                   await NfcManager.cancelTechnologyRequest();
                   setWriting(false);
                   
-                  // Show success message with test instructions
-                  Alert.alert(
-                    'Success! 🎉',
-                    `NFC tag has been written with review link for ${business.name}\n\nNow tap OK to minimize the app and test the NFC tag by touching it with your phone.`,
-                    [
-                      {
-                        text: 'OK',
-                        onPress: () => {
-                          // Minimize the app by going to background
-                          if (Platform.OS === 'android') {
-                            // On Android, we can send the app to background
-                            AppState.currentState = 'background';
-                          }
-                          // Show a secondary alert with instructions
-                          setTimeout(() => {
-                            Alert.alert(
-                              'Test Your NFC Tag',
-                              'Touch the NFC tag you just wrote with your phone to test if it opens the review link correctly.\n\nDid the NFC tag work correctly?',
-                              [
-                                {
-                                  text: 'No, it failed',
-                                  style: 'cancel',
-                                  onPress: () => {
-                                    Alert.alert(
-                                      'Tag Test Failed',
-                                      'Please try writing the tag again or use a different NFC tag.'
-                                    );
-                                  }
-                                },
-                                {
-                                  text: 'Yes, it works!',
-                                  onPress: async () => {
-                                    await verifyNFCTag();
-                                    Alert.alert(
-                                      'Success! ✅',
-                                      'Your NFC tag has been verified and recorded in the system.'
-                                    );
-                                  }
-                                }
-                              ]
-                            );
-                          }, 500);
-                        }
-                      }
-                    ]
-                  );
+                  // Show sale price modal instead of the old alert flow
+                  setShowSalePriceModal(true);
                 } else {
                   throw new Error('Failed to encode NDEF message');
                 }
@@ -153,58 +142,55 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
     }
   };
 
-  const logNFCTag = async () => {
+  const handleConfirmSale = async (salePrice: number, notes: string) => {
+    if (!currentTransaction) return;
+    
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const user = await AsyncStorage.getItem('user');
-      const userData = user ? JSON.parse(user) : null;
-
-      await fetch(`${API_URL}/nfc-tags`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          businessName: business.name,
-          businessAddress: business.address,
-          placeId: business.placeId,
-          reviewUrl: business.reviewUrl,
-          latitude: business.location.lat,
-          longitude: business.location.lng,
-          writtenBy: userData?.email || 'unknown',
-          userId: userData?.id  // Add user ID for franchise tracking
-        })
-      });
+      await transactionService.markAsSuccess(currentTransaction.id, salePrice, notes);
+      setShowSalePriceModal(false);
+      setCurrentTransaction(null);
+      
+      Alert.alert(
+        'Sale Recorded! 💰',
+        `Successfully recorded sale for £${salePrice.toFixed(2)}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     } catch (error) {
-      console.error('Failed to log NFC tag:', error);
-      // Don't show error to user, just log it
+      console.error('Error confirming sale:', error);
+      Alert.alert('Error', 'Failed to record sale. Please try again.');
     }
   };
 
-  const verifyNFCTag = async () => {
+  const handleMarkFailed = async (notes: string) => {
+    if (!currentTransaction) return;
+    
     try {
-      const token = await AsyncStorage.getItem('authToken');
-
-      const response = await fetch(`${API_URL}/nfc-tags/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          placeId: business.placeId,
-        })
-      });
-
-      const data = await response.json();
+      await transactionService.markAsFailed(currentTransaction.id, notes);
+      setShowSalePriceModal(false);
+      setCurrentTransaction(null);
       
-      if (!response.ok) {
-        console.error('Failed to verify NFC tag:', data.error);
-      }
+      Alert.alert(
+        'Marked as Failed',
+        'Please erase the tag to maintain inventory accuracy.',
+        [
+          {
+            text: 'Erase Now',
+            onPress: () => navigation.navigate('EraseTag')
+          },
+          {
+            text: 'Later',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     } catch (error) {
-      console.error('Failed to verify NFC tag:', error);
-      // Don't show error to user, just log it
+      console.error('Error marking failed:', error);
+      Alert.alert('Error', 'Failed to update transaction. Please try again.');
     }
   };
 
@@ -230,6 +216,25 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
           </View>
         )}
       </View>
+
+      {signType && (
+        <View style={styles.signTypeCard}>
+          <View style={styles.signTypeHeader}>
+            <Text style={styles.signTypeLabel}>Selected Sign Type</Text>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('SignTypeSelection', {
+                business,
+                onSelectSignType: (type: SignType) => setSignType(type)
+              })}
+            >
+              <Text style={styles.changeButton}>Change</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.signTypeName}>{signType.name}</Text>
+          <Text style={styles.signTypeDescription}>{signType.description}</Text>
+          <Text style={styles.signTypePrice}>Default Price: £{signType.defaultPrice.toFixed(2)}</Text>
+        </View>
+      )}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>📍 Location</Text>
@@ -272,6 +277,20 @@ export default function BusinessDetailScreen({ route, navigation }: any) {
           Tap the button above, then hold your phone near an NFC tag to write the review link.
         </Text>
       </View>
+
+      {signType && currentTransaction && (
+        <SalePriceInputModal
+          visible={showSalePriceModal}
+          signType={signType}
+          businessName={business.name}
+          onConfirm={handleConfirmSale}
+          onMarkFailed={handleMarkFailed}
+          onCancel={() => {
+            setShowSalePriceModal(false);
+            setCurrentTransaction(null);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -311,6 +330,53 @@ const styles = StyleSheet.create({
   ratingsCount: {
     fontSize: 14,
     color: '#9ca3af',
+  },
+  signTypeCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#10b981',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  signTypeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  signTypeLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10b981',
+    textTransform: 'uppercase',
+  },
+  changeButton: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4f46e5',
+  },
+  signTypeName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  signTypeDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  signTypePrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#10b981',
   },
   card: {
     backgroundColor: '#fff',
