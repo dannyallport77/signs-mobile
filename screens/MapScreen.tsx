@@ -176,7 +176,6 @@ export default function MapScreen({ navigation, onLogout }: any) {
             }}
             title={business.name}
             description={business.address}
-            onPress={() => handleMarkerPress(business)}
             onCalloutPress={() => handleMarkerPress(business)}
           />
         ))}
