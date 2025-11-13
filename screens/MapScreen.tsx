@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   TextInput,
   ScrollView,
-  FlatList
+  FlatList,
+  Keyboard
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -123,6 +124,7 @@ export default function MapScreen({ navigation, onLogout }: any) {
   };
 
   const handleSearch = () => {
+    Keyboard.dismiss();
     if (location) {
       searchNearby(location.latitude, location.longitude, searchKeyword);
     }
@@ -179,6 +181,8 @@ export default function MapScreen({ navigation, onLogout }: any) {
           value={searchKeyword}
           onChangeText={setSearchKeyword}
           onSubmitEditing={handleSearch}
+          returnKeyType="search"
+          blurOnSubmit={true}
         />
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Text style={styles.searchButtonText}>Search</Text>
