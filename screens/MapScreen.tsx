@@ -107,6 +107,7 @@ export default function MapScreen({ navigation, onLogout }: any) {
       const data = await response.json();
       
       if (response.ok && data.success) {
+        console.log(`Found ${data.data.length} businesses:`, data.data.map((b: Business) => b.name));
         setBusinesses(data.data);
       } else {
         Alert.alert('Error', data.error || 'Failed to search businesses');
