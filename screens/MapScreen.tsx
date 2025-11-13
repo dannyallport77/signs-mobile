@@ -239,10 +239,21 @@ export default function MapScreen({ navigation, onLogout }: any) {
       <View style={styles.bottomBar}>
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{user?.name || user?.email}</Text>
+          {(user?.role === 'admin' || user?.role === 'manager') && (
+            <Text style={styles.userRole}>{user.role}</Text>
+          )}
         </View>
         <View style={styles.stats}>
           <Text style={styles.statsText}>{businesses.length} businesses found</Text>
         </View>
+        {(user?.role === 'admin' || user?.role === 'manager') && (
+          <TouchableOpacity 
+            style={styles.adminButton} 
+            onPress={() => navigation.navigate('AdminSearch')}
+          >
+            <Text style={styles.adminButtonText}>🔍 Global</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
@@ -367,6 +378,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
+  userRole: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4f46e5',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
   stats: {
     flex: 1,
     alignItems: 'center',
@@ -374,6 +392,18 @@ const styles = StyleSheet.create({
   statsText: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  adminButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  adminButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
   },
   logoutButton: {
     backgroundColor: '#ef4444',

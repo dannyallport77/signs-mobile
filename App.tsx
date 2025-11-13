@@ -10,6 +10,7 @@ import MapScreen from './screens/MapScreen';
 import BusinessDetailScreen from './screens/BusinessDetailScreen';
 import SignTypeSelectionScreen from './screens/SignTypeSelectionScreen';
 import EraseTagScreen from './screens/EraseTagScreen';
+import AdminSearchScreen from './screens/AdminSearchScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -79,6 +80,11 @@ export default function App() {
               name="EraseTag" 
               component={EraseTagScreen}
               options={{ title: 'Erase NFC Tag' }}
+            />
+            <Stack.Screen 
+              name="AdminSearch" 
+              component={AdminSearchScreen}
+              options={{ title: 'Admin Business Search' }}
             />
           </>
         )}
