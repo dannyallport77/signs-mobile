@@ -6,7 +6,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.110:3000/ap
 export const signTypeService = {
   async getAll(): Promise<SignType[]> {
     const token = await AsyncStorage.getItem('authToken');
-    const response = await fetch(`${API_URL}/sign-types`, {
+    const response = await fetch(`${API_URL}/mobile/products`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
