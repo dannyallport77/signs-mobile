@@ -120,7 +120,15 @@ export default function MapScreen({ navigation, onLogout }: any) {
   };
 
   const handleMarkerPress = (business: Business) => {
-    navigation.navigate('SignTypeSelection', { business });
+    console.log('Marker pressed for business:', business.name);
+    console.log('Navigation object:', navigation);
+    try {
+      navigation.navigate('SignTypeSelection', { business });
+      console.log('Navigation successful');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Alert.alert('Error', 'Failed to navigate to sign selection');
+    }
   };
 
   const handleSearch = () => {
