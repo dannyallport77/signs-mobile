@@ -166,6 +166,7 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
       actionType
     };
 
+    // Navigate directly to ProductSelection instead of SignTypeSelection
     navigation.navigate('ProductSelection', payload);
   };
 
@@ -198,12 +199,31 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
     if (!wasSearched && platform.key !== 'google') {
       return null;
     }
+
+    const handleCardPress = () => {
+      const urls = getPlatformUrls(platform.key);
+      
+      // If platform has both review and profile URLs, show action modal
+      if (urls.reviewUrl && urls.profileUrl && urls.reviewUrl !== urls.profileUrl) {
+        setSelectedPlatform(platform);
+        setShowActionModal(true);
+      } else {
+        // Navigate directly to ProductSelection with the platform info
+        const finalUrl = urls.reviewUrl || business.reviewUrl;
+        navigation.navigate('ProductSelection', {
+          business,
+          reviewUrl: finalUrl,
+          platformLabel: platform.label,
+          linkDescription: platform.description,
+        });
+      }
+    };
     
     return (
       <TouchableOpacity
         key={platform.key}
         style={[styles.card, isSelected && styles.cardSelected]}
-        onPress={() => setSelectedPlatform(platform)}
+        onPress={handleCardPress}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.cardEmoji}>{platform.emoji}</Text>
@@ -233,6 +253,9 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
             <Text style={styles.notFoundText}>No profile found - will use Google</Text>
           </View>
         )}
+        <View style={styles.cardFooter}>
+          <Text style={styles.tapToSelect}>Tap to select products →</Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -454,6 +477,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  cardFooter: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  tapToSelect: {
+    fontSize: 13,
+    color: '#4f46e5',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   errorText: {
     flex: 1,

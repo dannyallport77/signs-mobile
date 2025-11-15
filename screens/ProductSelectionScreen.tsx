@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { productService } from '../services/productService';
 import { Product, ProductVariant } from '../types';
@@ -17,12 +18,18 @@ interface ProductSelectionScreenProps {
   route: any;
 }
 
+interface ProductGroup {
+  groupType: string;
+  products: Product[];
+}
+
 export default function ProductSelectionScreen({ navigation, route }: ProductSelectionScreenProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const { business, platformKey, platformLabel, reviewUrl, linkDescription } = route?.params || {};
 
@@ -30,12 +37,37 @@ export default function ProductSelectionScreen({ navigation, route }: ProductSel
     loadProducts();
   }, []);
 
+  // Group products by groupType
+  const groupedProducts = useMemo(() => {
+    const groups = new Map<string, Product[]>();
+    products.forEach((product) => {
+      const group = product.groupType || 'Other Products';
+      if (!groups.has(group)) {
+        groups.set(group, []);
+      }
+      groups.get(group)?.push(product);
+    });
+    return Array.from(groups.entries()).map(([groupType, groupProducts]) => ({
+      groupType,
+      products: groupProducts,
+    }));
+  }, [products]);
+
   const loadProducts = async () => {
     setLoading(true);
     setError(null);
     try {
       const catalog = await productService.fetchProducts();
       setProducts(catalog);
+      
+      // Initialize all groups as expanded
+      const initialGroups: Record<string, boolean> = {};
+      const uniqueGroups = new Set(catalog.map(p => p.groupType || 'Other Products'));
+      uniqueGroups.forEach(group => {
+        initialGroups[group] = true;
+      });
+      setExpandedGroups(initialGroups);
+      
       if (catalog.length > 0) {
         setSelectedProduct(catalog[0]);
         setSelectedVariant(catalog[0].variants[0]);
@@ -74,6 +106,13 @@ export default function ProductSelectionScreen({ navigation, route }: ProductSel
       product: selectedProduct,
       variant: selectedVariant,
     });
+  };
+
+  const toggleGroup = (groupType: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupType]: !prev[groupType],
+    }));
   };
 
   const renderVariant = (variant: ProductVariant) => {
@@ -149,12 +188,52 @@ export default function ProductSelectionScreen({ navigation, route }: ProductSel
         </View>
       </View>
 
-      <FlatList
-        data={products}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-      />
+      <ScrollView contentContainerStyle={styles.listContent}>
+        {groupedProducts.map((group) => (
+          <View key={group.groupType} style={styles.groupContainer}>
+            <TouchableOpacity
+              style={styles.groupHeader}
+              onPress={() => toggleGroup(group.groupType)}
+            >
+              <Text style={styles.groupTitle}>{group.groupType}</Text>
+              <View style={styles.groupHeaderRight}>
+                <Text style={styles.groupCount}>{group.products.length} items</Text>
+                <Text style={styles.groupToggle}>
+                  {expandedGroups[group.groupType] ? '−' : '+'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            
+            {expandedGroups[group.groupType] && (
+              <View style={styles.groupBody}>
+                {group.products.map((product) => {
+                  const isSelected = selectedProduct?.id === product.id;
+                  return (
+                    <TouchableOpacity
+                      key={product.id}
+                      style={[styles.productCard, isSelected && styles.productCardSelected]}
+                      onPress={() => handleProductSelect(product)}
+                    >
+                      {product.imageUrl ? (
+                        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+                      ) : (
+                        <View style={styles.productImagePlaceholder} />
+                      )}
+                      <View style={styles.productText}>
+                        <Text style={styles.productName}>{product.name}</Text>
+                        <Text style={styles.productDescription} numberOfLines={2}>
+                          {product.description}
+                        </Text>
+                        <Text style={styles.productPrice}>From £{product.basePrice.toFixed(2)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ))}
+      </ScrollView>
 
       {selectedProduct && (
         <View style={styles.variantContainer}>
@@ -199,11 +278,53 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 120,
   },
+  groupContainer: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  groupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  groupHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  groupCount: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  groupToggle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#4f46e5',
+    width: 24,
+    textAlign: 'center',
+  },
+  groupBody: {
+    padding: 12,
+  },
   productCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 8,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     overflow: 'hidden',

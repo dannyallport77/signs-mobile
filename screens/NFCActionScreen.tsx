@@ -85,18 +85,66 @@ export default function NFCActionScreen({ navigation, route }: NFCActionScreenPr
     }
   };
 
-  const handleTest = () => {
+  const handleTest = async () => {
     if (!lastWrittenUrl) {
-      Alert.alert('Test required', 'Program the tag before testing');
+      Alert.alert('Test Required', 'Program a tag first before testing');
       return;
     }
 
-    if (lastWrittenUrl === reviewUrl) {
-      Alert.alert('Test passed', 'Tag data matches the selected platform');
-      setStatusMessage('Last test succeeded');
-    } else {
-      Alert.alert('Test failed', 'Tag data does not match the intended data');
-      setStatusMessage('Test failed');
+    try {
+      setWriting(true);
+      setStatusMessage('Hold tag near phone to read...');
+      
+      await NfcManager.requestTechnology(NfcTech.Ndef, {
+        alertMessage: 'Hold the programmed tag near your phone to verify',
+      });
+
+      const tag = await NfcManager.getTag();
+      
+      if (!tag || !tag.ndefMessage || tag.ndefMessage.length === 0) {
+        Alert.alert(
+          'Test Failed',
+          'No data found on tag. The tag may be blank or unreadable.',
+          [{ text: 'OK' }]
+        );
+        setStatusMessage('Test failed - no data found');
+        return;
+      }
+
+      const record = tag.ndefMessage[0];
+      const uri = Ndef.uri.decodePayload(record.payload);
+      
+      const match = uri === lastWrittenUrl;
+      const matchExpected = uri === reviewUrl;
+
+      if (match && matchExpected) {
+        Alert.alert(
+          '✅ Test Passed',
+          `Tag verified successfully!\n\nExpected: ${reviewUrl}\n\nFound: ${uri}\n\n✓ Data matches perfectly`,
+          [{ text: 'OK' }]
+        );
+        setStatusMessage('✅ Test passed - data verified');
+      } else if (uri) {
+        Alert.alert(
+          '⚠️ Data Mismatch',
+          `Tag contains different data:\n\nExpected: ${reviewUrl}\n\nFound: ${uri}\n\n${match ? '✓ Matches last write' : '✗ Does not match last write'}`,
+          [{ text: 'OK' }]
+        );
+        setStatusMessage('⚠️ Test failed - data mismatch');
+      } else {
+        Alert.alert(
+          '❌ Test Failed',
+          'Unable to read tag data',
+          [{ text: 'OK' }]
+        );
+        setStatusMessage('❌ Test failed - read error');
+      }
+    } catch (error: any) {
+      Alert.alert('Test Error', error.message || 'Failed to read tag');
+      setStatusMessage('Test error');
+    } finally {
+      setWriting(false);
+      NfcManager.cancelTechnologyRequest().catch(() => {});
     }
   };
 
