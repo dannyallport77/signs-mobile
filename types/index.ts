@@ -1,11 +1,97 @@
 // Type definitions for Sales Tracking & Analytics
 
+export interface SocialMediaLinks {
+  facebook?: {
+    profileUrl?: string;
+    reviewUrl?: string;
+  };
+  instagram?: {
+    profileUrl?: string;
+  };
+  tiktok?: {
+    profileUrl?: string;
+  };
+  twitter?: {
+    profileUrl?: string;
+  };
+  linkedin?: {
+    profileUrl?: string;
+  };
+  tripadvisor?: {
+    reviewUrl?: string;
+  };
+  trustpilot?: {
+    reviewUrl?: string;
+  };
+  yell?: {
+    profileUrl?: string;
+  };
+  ratedpeople?: {
+    profileUrl?: string;
+  };
+  trustatrader?: {
+    profileUrl?: string;
+  };
+  checkatrade?: {
+    profileUrl?: string;
+  };
+}
+
+export interface Business {
+  placeId: string;
+  name: string;
+  address: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  rating?: number;
+  userRatingsTotal?: number;
+  reviewUrl: string;
+  mapsUrl: string;
+  socialMedia?: SocialMediaLinks;
+}
+
+export interface ReviewStats {
+  total: number;
+  lastWeek: number;
+  lastMonth: number;
+  lastYear: number;
+}
+
+export interface PlatformSelection {
+  key: string;
+  label: string;
+  description: string;
+  emoji: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  label: string;
+  description?: string;
+  priceDelta?: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  rrp?: number;
+  sku?: string;
+  imageUrl?: string;
+  groupType: string;
+  variants: ProductVariant[];
+}
+
 export interface SignType {
   id: string;
   name: string;
   description: string;
   defaultPrice: number;
   isActive: boolean;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

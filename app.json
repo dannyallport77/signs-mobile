@@ -2,7 +2,7 @@
   "expo": {
     "name": "Review Signs NFC Programmer",
     "slug": "signs-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "runtimeVersion": "1.0.0",
     "sdkVersion": "54.0.0",
@@ -28,7 +28,7 @@
         "googleMapsApiKey": "AIzaSyDDfyo07pPKa4DYzWdkkVWAQYuba_T3zqo"
       },
       "bundleIdentifier": "com.dannyallport.signsnfc",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "appStoreUrl": "https://apps.apple.com/app/review-signs-nfc-programmer/id6755160639"
     },
     "android": {

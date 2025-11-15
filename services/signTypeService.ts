@@ -5,19 +5,47 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.110:3000/ap
 
 export const signTypeService = {
   async getAll(): Promise<SignType[]> {
-    const token = await AsyncStorage.getItem('authToken');
-    const response = await fetch(`${API_URL}/mobile/products`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      console.log('Fetching sign types from:', `${API_URL}/mobile/products`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      const response = await fetch(`${API_URL}/mobile/products`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      console.log('Response status:', response.status);
+
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch sign types');
       }
-    });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to fetch sign types');
+      // Map API product fields to SignType interface
+      const signTypes: SignType[] = data.data.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        defaultPrice: product.price || 0,
+        isActive: product.isActive ?? true,
+        imageUrl: product.imageUrl || '',
+        createdAt: product.createdAt || new Date().toISOString(),
+        updatedAt: product.updatedAt || new Date().toISOString()
+      }));
+
+      return signTypes;
+    } catch (error) {
+      console.error('Sign type fetch error:', error);
+      throw error;
     }
-
-    return data.data;
   },
 
   async create(signType: Partial<SignType>): Promise<SignType> {

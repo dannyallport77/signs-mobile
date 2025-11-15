@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,12 +7,37 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import LoginScreen from './screens/LoginScreen';
 import MapScreen from './screens/MapScreen';
-import BusinessDetailScreen from './screens/BusinessDetailScreen';
-import SignTypeSelectionScreen from './screens/SignTypeSelectionScreen';
+import BusinessInfoScreen from './screens/BusinessInfoScreen';
+import ProductSelectionScreen from './screens/ProductSelectionScreen';
+import NFCActionScreen from './screens/NFCActionScreen';
+import SaleCreationScreen from './screens/SaleCreationScreen';
 import EraseTagScreen from './screens/EraseTagScreen';
 import AdminSearchScreen from './screens/AdminSearchScreen';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const Stack = createNativeStackNavigator();
+
+// Global error handler
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  console.error('Global error caught:', error, isFatal);
+  console.error('Error stack:', error.stack);
+  
+  if (isFatal) {
+    Alert.alert(
+      'Unexpected error occurred',
+      `
+Error: ${error.name}
+Message: ${error.message}
+Stack: ${error.stack?.substring(0, 500)}
+
+Please report this to support.
+      `,
+      [{
+        text: 'OK'
+      }]
+    );
+  }
+});
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,16 +91,46 @@ export default function App() {
             >
               {(props) => <MapScreen {...props} onLogout={handleLogout} />}
             </Stack.Screen>
-            <Stack.Screen 
-              name="BusinessDetail" 
-              component={BusinessDetailScreen}
-              options={{ title: 'Business Details' }}
-            />
-            <Stack.Screen 
-              name="SignTypeSelection" 
-              component={SignTypeSelectionScreen}
-              options={{ title: 'Select Sign Type' }}
-            />
+            <Stack.Screen
+              name="BusinessInfo"
+              options={{ title: 'Business Review Platforms' }}
+            >
+              {(props) => (
+                <ErrorBoundary navigation={props.navigation}>
+                  <BusinessInfoScreen {...props} />
+                </ErrorBoundary>
+              )}
+            </Stack.Screen>
+            <Stack.Screen
+              name="ProductSelection"
+              options={{ title: 'Choose Product' }}
+            >
+              {(props) => (
+                <ErrorBoundary navigation={props.navigation}>
+                  <ProductSelectionScreen {...props} />
+                </ErrorBoundary>
+              )}
+            </Stack.Screen>
+            <Stack.Screen
+              name="NFCAction"
+              options={{ title: 'Program Sign' }}
+            >
+              {(props) => (
+                <ErrorBoundary navigation={props.navigation}>
+                  <NFCActionScreen {...props} />
+                </ErrorBoundary>
+              )}
+            </Stack.Screen>
+            <Stack.Screen
+              name="SaleCreation"
+              options={{ title: 'Create Sale' }}
+            >
+              {(props) => (
+                <ErrorBoundary navigation={props.navigation}>
+                  <SaleCreationScreen {...props} />
+                </ErrorBoundary>
+              )}
+            </Stack.Screen>
             <Stack.Screen 
               name="EraseTag" 
               component={EraseTagScreen}

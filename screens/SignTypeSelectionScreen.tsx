@@ -6,10 +6,17 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
+  Image,
+  Platform,
+  AppState
 } from 'react-native';
+import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signTypeService } from '../services/signTypeService';
-import { SignType } from '../types';
+import { transactionService } from '../services/transactionService';
+import SalePriceInputModal from '../components/SalePriceInputModal';
+import { SignType, Business, Transaction } from '../types';
 
 interface SignTypeSelectionScreenProps {
   navigation: any;
@@ -17,14 +24,59 @@ interface SignTypeSelectionScreenProps {
 }
 
 export default function SignTypeSelectionScreen({ navigation, route }: SignTypeSelectionScreenProps) {
-  const { business, onSelectSignType } = route.params;
   const [signTypes, setSignTypes] = useState<SignType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<SignType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
+  const [showSalePriceModal, setShowSalePriceModal] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  
+  let business: Business | undefined, reviewUrl: string, reviewPlatform: string, linkDescription: string;
+  
+  try {
+    const params = route?.params || {};
+    business = params.business;
+    reviewUrl = params.reviewUrl;
+    reviewPlatform = params.reviewPlatform || 'Google Review';
+    linkDescription = params.linkDescription || 'Review Link';
+    
+    console.log('SignTypeSelectionScreen - business:', business ? 'exists' : 'missing');
+    console.log('SignTypeSelectionScreen - reviewUrl:', reviewUrl);
+    console.log('SignTypeSelectionScreen - reviewPlatform:', reviewPlatform);
+  } catch (e) {
+    console.error('Error accessing route params:', e);
+    setError('Failed to load business data: ' + (e as Error).message);
+  }
 
   useEffect(() => {
-    loadSignTypes();
+    try {
+      loadSignTypes();
+      initNFC();
+    } catch (e) {
+      console.error('Error in useEffect:', e);
+      setError('Error loading sign types: ' + (e as Error).message);
+    }
+
+    // Cleanup NFC on unmount
+    return () => {
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    };
   }, []);
+
+  const initNFC = async () => {
+    try {
+      const supported = await NfcManager.isSupported();
+      if (supported) {
+        await NfcManager.start();
+        console.log('NFC initialized successfully');
+      } else {
+        console.warn('NFC not supported on this device');
+      }
+    } catch (error) {
+      console.error('Error initializing NFC:', error);
+    }
+  };
 
   const loadSignTypes = async () => {
     try {
@@ -43,17 +95,181 @@ export default function SignTypeSelectionScreen({ navigation, route }: SignTypeS
     setSelectedType(signType);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedType) {
       Alert.alert('Please Select', 'Please select a sign type to continue');
       return;
     }
 
-    // Navigate back to BusinessDetail with the selected sign type
-    navigation.navigate('BusinessDetail', {
-      business,
-      selectedSignType: selectedType
-    });
+    if (!business) {
+      Alert.alert('Error', 'Business information is missing');
+      navigation.navigate('Map');
+      return;
+    }
+
+    if (!reviewUrl) {
+      Alert.alert('Error', 'Review URL is missing');
+      return;
+    }
+
+    await writeNFC();
+  };
+
+  const writeNFC = async () => {
+    if (!selectedType || !business || !reviewUrl) {
+      Alert.alert('Error', 'Missing required information');
+      return;
+    }
+
+    try {
+      setWriting(true);
+
+      // Check if NFC is supported
+      const supported = await NfcManager.isSupported();
+      if (!supported) {
+        Alert.alert('NFC Not Supported', 'This device does not support NFC');
+        return;
+      }
+
+      // Check if NFC is enabled
+      const enabled = await NfcManager.isEnabled();
+      if (!enabled) {
+        Alert.alert(
+          'NFC Disabled',
+          'Please enable NFC in your device settings',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      console.log('Starting NFC write for URL:', reviewUrl);
+
+      // Request NFC technology
+      await NfcManager.requestTechnology(NfcTech.Ndef, {
+        alertMessage: `Hold your phone near the ${selectedType.name} NFC tag`,
+      });
+
+      // Write URL to tag
+      const bytes = Ndef.encodeMessage([Ndef.uriRecord(reviewUrl)]);
+      
+      if (bytes) {
+        await NfcManager.ndefHandler.writeNdefMessage(bytes);
+        console.log('Successfully wrote to NFC tag');
+
+        // Create transaction record
+        try {
+          const transaction = await transactionService.create({
+            signTypeId: selectedType.id,
+            businessName: business.name,
+            businessAddress: business.address,
+            placeId: business.placeId,
+            reviewUrl: reviewUrl,
+            status: 'pending',
+            locationLat: business.location.lat,
+            locationLng: business.location.lng,
+            notes: `${reviewPlatform} - ${linkDescription}`
+          });
+
+          console.log('Transaction created:', transaction);
+          setCurrentTransaction(transaction);
+
+          // Show success and sale price modal
+          Alert.alert(
+            'Success!',
+            `NFC tag programmed successfully with ${linkDescription}`,
+            [
+              {
+                text: 'Record Sale',
+                onPress: () => setShowSalePriceModal(true)
+              }
+            ]
+          );
+        } catch (error) {
+          console.error('Error creating transaction:', error);
+          Alert.alert(
+            'Warning',
+            'NFC tag was written successfully, but transaction recording failed. The tag will still work.'
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error('NFC write error:', error);
+      
+      if (error.toString().includes('cancelled') || error.toString().includes('Cancel')) {
+        Alert.alert('Cancelled', 'NFC write was cancelled');
+      } else {
+        Alert.alert(
+          'Write Failed',
+          `Failed to write to NFC tag: ${error.message || error.toString()}`
+        );
+      }
+    } finally {
+      setWriting(false);
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    }
+  };
+
+  const handleConfirmSale = async (salePrice: number) => {
+    if (!currentTransaction || !selectedType) return;
+
+    try {
+      await transactionService.update(currentTransaction.id, {
+        status: 'success',
+        salePrice
+      });
+
+      setShowSalePriceModal(false);
+      setCurrentTransaction(null);
+
+      Alert.alert(
+        'Sale Recorded',
+        `£${salePrice.toFixed(2)} sale recorded successfully!`,
+        [
+          {
+            text: 'Program Another',
+            onPress: () => setSelectedType(null)
+          },
+          {
+            text: 'Done',
+            onPress: () => navigation.navigate('Map')
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      Alert.alert('Error', 'Failed to record sale');
+    }
+  };
+
+  const handleMarkFailed = async () => {
+    if (!currentTransaction) return;
+
+    try {
+      await transactionService.update(currentTransaction.id, {
+        status: 'failed'
+      });
+
+      setShowSalePriceModal(false);
+      setCurrentTransaction(null);
+
+      Alert.alert(
+        'Sale Marked as Failed',
+        'The transaction has been marked as failed',
+        [
+          {
+            text: 'Try Again',
+            onPress: () => setSelectedType(null)
+          },
+          {
+            text: 'Done',
+            onPress: () => navigation.navigate('Map')
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error marking transaction as failed:', error);
+      Alert.alert('Error', 'Failed to update transaction');
+    }
   };
 
   const renderSignType = ({ item }: { item: SignType }) => {
@@ -64,18 +280,29 @@ export default function SignTypeSelectionScreen({ navigation, route }: SignTypeS
         style={[styles.signTypeCard, isSelected && styles.selectedCard]}
         onPress={() => handleSelect(item)}
       >
-        <View style={styles.cardHeader}>
-          <Text style={[styles.signTypeName, isSelected && styles.selectedText]}>
-            {item.name}
-          </Text>
-          {isSelected && <Text style={styles.checkmark}>✓</Text>}
-        </View>
-        <Text style={styles.description}>{item.description}</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Default Price:</Text>
-          <Text style={[styles.price, isSelected && styles.selectedText]}>
-            £{item.defaultPrice.toFixed(2)}
-          </Text>
+        <View style={styles.cardContent}>
+          {item.imageUrl && (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.signImage}
+              resizeMode="cover"
+            />
+          )}
+          <View style={styles.cardTextContainer}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.signTypeName, isSelected && styles.selectedText]}>
+                {item.name}
+              </Text>
+              {isSelected && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.description}>{item.description}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.priceLabel}>Default Price:</Text>
+              <Text style={[styles.price, isSelected && styles.selectedText]}>
+                £{item.defaultPrice.toFixed(2)}
+              </Text>
+            </View>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -90,13 +317,53 @@ export default function SignTypeSelectionScreen({ navigation, route }: SignTypeS
     );
   }
 
+  // Show error if any
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Error</Text>
+          <Text style={styles.subtitle}>{error}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={() => navigation.navigate('Map')}
+        >
+          <Text style={styles.continueButtonText}>Back to Map</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Check if business data is missing
+  if (!business) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Error</Text>
+          <Text style={styles.subtitle}>Business information is missing. Please select a business from the map.</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={() => navigation.navigate('Map')}
+        >
+          <Text style={styles.continueButtonText}>Back to Map</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Select Sign Type</Text>
         <Text style={styles.subtitle}>
-          Choose the type of sign you're programming for {business.name}
+          Choose the sign type for {business?.name || 'this business'}
         </Text>
+        <View style={styles.platformInfo}>
+          <Text style={styles.platformLabel}>Programming for:</Text>
+          <Text style={styles.platformValue}>{linkDescription}</Text>
+        </View>
       </View>
 
       <FlatList
@@ -115,14 +382,29 @@ export default function SignTypeSelectionScreen({ navigation, route }: SignTypeS
       {selectedType && (
         <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[styles.continueButton, writing && styles.continueButtonDisabled]}
             onPress={handleContinue}
+            disabled={writing}
           >
             <Text style={styles.continueButtonText}>
-              Continue with {selectedType.name}
+              {writing ? 'Hold near NFC tag...' : `Write NFC Tag - ${selectedType.name}`}
             </Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {selectedType && currentTransaction && (
+        <SalePriceInputModal
+          visible={showSalePriceModal}
+          signType={selectedType}
+          businessName={business?.name || 'Unknown'}
+          onConfirm={handleConfirmSale}
+          onMarkFailed={handleMarkFailed}
+          onCancel={() => {
+            setShowSalePriceModal(false);
+            setCurrentTransaction(null);
+          }}
+        />
       )}
     </View>
   );
@@ -159,6 +441,26 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#6b7280',
+    marginBottom: 8,
+  },
+  platformInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#eef2ff',
+    borderRadius: 8,
+  },
+  platformLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginRight: 8,
+  },
+  platformValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4f46e5',
   },
   listContent: {
     padding: 16,
@@ -166,10 +468,10 @@ const styles = StyleSheet.create({
   signTypeCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     borderWidth: 2,
     borderColor: '#e5e7eb',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -179,6 +481,18 @@ const styles = StyleSheet.create({
   selectedCard: {
     borderColor: '#4f46e5',
     backgroundColor: '#eef2ff',
+  },
+  cardContent: {
+    flexDirection: 'row',
+  },
+  signImage: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#f3f4f6',
+  },
+  cardTextContainer: {
+    flex: 1,
+    padding: 16,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -249,6 +563,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#9ca3af',
   },
   continueButtonText: {
     color: '#fff',

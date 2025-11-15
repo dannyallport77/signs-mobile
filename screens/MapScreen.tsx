@@ -11,9 +11,10 @@ import {
   FlatList,
   Keyboard
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Business } from '../types';
 
 // API URL - use environment variable or default to network IP
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.110:3000/api';
@@ -25,20 +26,6 @@ const DEFAULT_LOCATION = {
   latitudeDelta: 0.05,
   longitudeDelta: 0.05,
 };
-
-interface Business {
-  placeId: string;
-  name: string;
-  address: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
-  rating?: number;
-  userRatingsTotal?: number;
-  reviewUrl: string;
-  mapsUrl: string;
-}
 
 export default function MapScreen({ navigation, onLogout }: any) {
   const [location, setLocation] = useState<any>(null);
@@ -121,14 +108,29 @@ export default function MapScreen({ navigation, onLogout }: any) {
   };
 
   const handleMarkerPress = (business: Business) => {
-    console.log('Marker pressed for business:', business.name);
-    console.log('Navigation object:', navigation);
+    console.log('=== handleMarkerPress called ===');
+    console.log('Business object:', JSON.stringify(business, null, 2));
+    console.log('Business name:', business?.name);
+    console.log('Business placeId:', business?.placeId);
+    console.log('Navigation object exists:', !!navigation);
+    
+    if (!business) {
+      Alert.alert('Error', 'No business data available');
+      return;
+    }
+    
+    if (!business.placeId || !business.name) {
+      Alert.alert('Error', 'Business data is incomplete');
+      return;
+    }
+    
     try {
-      navigation.navigate('SignTypeSelection', { business });
-      console.log('Navigation successful');
+      console.log('About to navigate with params:', { business });
+      navigation.navigate('BusinessInfo', { business });
+      console.log('Navigation call completed');
     } catch (error) {
       console.error('Navigation error:', error);
-      Alert.alert('Error', 'Failed to navigate to sign selection');
+      Alert.alert('Error', 'Failed to navigate to business info: ' + error.message);
     }
   };
 
@@ -175,10 +177,16 @@ export default function MapScreen({ navigation, onLogout }: any) {
               latitude: business.location.lat,
               longitude: business.location.lng,
             }}
-            title={business.name}
-            description={business.address}
-            onCalloutPress={() => handleMarkerPress(business)}
-          />
+            onPress={() => console.log('Marker tapped:', business.name)}
+          >
+            <Callout onPress={() => handleMarkerPress(business)}>
+              <View style={styles.calloutContainer}>
+                <Text style={styles.calloutTitle}>{business.name}</Text>
+                <Text style={styles.calloutAddress}>{business.address}</Text>
+                <Text style={styles.calloutTapText}>Tap to program NFC tag</Text>
+              </View>
+            </Callout>
+          </Marker>
         ))}
       </MapView>
 
@@ -274,6 +282,27 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  calloutContainer: {
+    minWidth: 200,
+    padding: 10,
+  },
+  calloutTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  calloutAddress: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  calloutTapText: {
+    fontSize: 11,
+    color: '#4f46e5',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   searchContainer: {
     position: 'absolute',
