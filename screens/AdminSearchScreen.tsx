@@ -73,7 +73,7 @@ export default function AdminSearchScreen({ navigation }: any) {
   };
 
   const handleSelectBusiness = (business: Business) => {
-    navigation.navigate('SignTypeSelection', { business });
+    navigation.navigate('BusinessInfo', { business });
   };
 
   return (

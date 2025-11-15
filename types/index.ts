@@ -4,36 +4,49 @@ export interface SocialMediaLinks {
   facebook?: {
     profileUrl?: string;
     reviewUrl?: string;
+    searched?: boolean;
   };
   instagram?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   tiktok?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   twitter?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   linkedin?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   tripadvisor?: {
     reviewUrl?: string;
+    profileUrl?: string;
+    searched?: boolean;
   };
   trustpilot?: {
     reviewUrl?: string;
+    profileUrl?: string;
+    searched?: boolean;
   };
   yell?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   ratedpeople?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   trustatrader?: {
     profileUrl?: string;
+    searched?: boolean;
   };
   checkatrade?: {
     profileUrl?: string;
+    searched?: boolean;
   };
 }
 

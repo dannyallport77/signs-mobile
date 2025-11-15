@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { Business, PlatformSelection, SocialMediaLinks } from '../types';
 import { socialMediaService } from '../services/socialMediaService';
@@ -32,6 +33,7 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
   const [socialMedia, setSocialMedia] = useState<SocialMediaLinks>({});
   const [loadingSocial, setLoadingSocial] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformSelection | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   let business: Business | undefined;
@@ -89,6 +91,49 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
     }
   };
 
+  const getPlatformUrls = (key: string): { reviewUrl?: string; profileUrl?: string } => {
+    if (!business) return {};
+    switch (key) {
+      case 'facebook':
+        return {
+          reviewUrl: socialMedia.facebook?.reviewUrl,
+          profileUrl: socialMedia.facebook?.profileUrl
+        };
+      case 'instagram':
+        return {
+          profileUrl: socialMedia.instagram?.profileUrl
+        };
+      case 'tripadvisor':
+        return {
+          reviewUrl: socialMedia.tripadvisor?.reviewUrl,
+          profileUrl: socialMedia.tripadvisor?.profileUrl
+        };
+      case 'trustpilot':
+        return {
+          reviewUrl: socialMedia.trustpilot?.reviewUrl,
+          profileUrl: socialMedia.trustpilot?.profileUrl
+        };
+      case 'yell':
+        return {
+          profileUrl: socialMedia.yell?.profileUrl
+        };
+      case 'ratedpeople':
+        return {
+          profileUrl: socialMedia.ratedpeople?.profileUrl
+        };
+      case 'trustatrader':
+        return {
+          profileUrl: socialMedia.trustatrader?.profileUrl
+        };
+      case 'checkatrade':
+        return {
+          profileUrl: socialMedia.checkatrade?.profileUrl
+        };
+      default:
+        return { reviewUrl: business.reviewUrl };
+    }
+  };
+
   const handleContinue = () => {
     if (!business) {
       Alert.alert('Missing business');
@@ -99,14 +144,26 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
       return;
     }
 
-    const url = getPlatformUrl(selectedPlatform.key) || business.reviewUrl;
+    // Show action modal if platform has both review and profile URLs
+    const urls = getPlatformUrls(selectedPlatform.key);
+    if (urls.reviewUrl && urls.profileUrl && urls.reviewUrl !== urls.profileUrl) {
+      setShowActionModal(true);
+    } else {
+      // Only one action available, proceed directly
+      proceedWithUrl(urls.reviewUrl || urls.profileUrl || business.reviewUrl, 'default');
+    }
+  };
 
+  const proceedWithUrl = (url: string, actionType: 'review' | 'profile' | 'default') => {
+    setShowActionModal(false);
+    
     const payload = {
       business,
-      platformKey: selectedPlatform.key,
-      platformLabel: selectedPlatform.label,
-      linkDescription: selectedPlatform.description,
+      platformKey: selectedPlatform?.key,
+      platformLabel: selectedPlatform?.label,
+      linkDescription: selectedPlatform?.description,
       reviewUrl: url,
+      actionType
     };
 
     navigation.navigate('ProductSelection', payload);
@@ -133,6 +190,15 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
     const platformUrl = getPlatformUrl(platform.key);
     const hasLink = !!platformUrl && platformUrl !== business.reviewUrl;
     
+    // Check if this platform was searched
+    const platformData = socialMedia[platform.key as keyof SocialMediaLinks];
+    const wasSearched = platformData?.searched === true;
+    
+    // Don't show platforms that weren't searched (based on business category)
+    if (!wasSearched && platform.key !== 'google') {
+      return null;
+    }
+    
     return (
       <TouchableOpacity
         key={platform.key}
@@ -143,6 +209,7 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
           <Text style={styles.cardEmoji}>{platform.emoji}</Text>
           <Text style={styles.cardTitle}>{platform.label}</Text>
           {hasLink && <Text style={styles.foundBadge}>✓ Found</Text>}
+          {!hasLink && wasSearched && <Text style={styles.notFoundBadge}>✗ Not Found</Text>}
         </View>
         <Text style={styles.cardDescription}>{platform.description}</Text>
         {platform.key === 'google' && (
@@ -161,7 +228,7 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
             <Text style={styles.statsValue}>Profile found and ready</Text>
           </View>
         )}
-        {!hasLink && platform.key !== 'google' && (
+        {!hasLink && wasSearched && platform.key !== 'google' && (
           <View style={styles.statsList}>
             <Text style={styles.notFoundText}>No profile found - will use Google</Text>
           </View>
@@ -192,6 +259,66 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
         <Text style={styles.continueText}>Continue to sign types</Text>
       </TouchableOpacity>
+
+      {/* Action Selection Modal */}
+      <Modal
+        visible={showActionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowActionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Choose Action</Text>
+            <Text style={styles.modalSubtitle}>
+              What would you like customers to do on {selectedPlatform?.label}?
+            </Text>
+            
+            {getPlatformUrls(selectedPlatform?.key || '').reviewUrl && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => proceedWithUrl(
+                  getPlatformUrls(selectedPlatform?.key || '').reviewUrl!,
+                  'review'
+                )}
+              >
+                <Text style={styles.actionEmoji}>✍️</Text>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>Leave a Review</Text>
+                  <Text style={styles.actionDescription}>
+                    Takes customers directly to write a review
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {getPlatformUrls(selectedPlatform?.key || '').profileUrl && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => proceedWithUrl(
+                  getPlatformUrls(selectedPlatform?.key || '').profileUrl!,
+                  'profile'
+                )}
+              >
+                <Text style={styles.actionEmoji}>👁️</Text>
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.actionTitle}>Visit Page</Text>
+                  <Text style={styles.actionDescription}>
+                    Takes customers to your profile/listing
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowActionModal(false)}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -268,6 +395,15 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
   },
+  notFoundBadge: {
+    fontSize: 12,
+    color: '#ef4444',
+    fontWeight: '600',
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
   cardDescription: {
     fontSize: 14,
     color: '#6b7280',
@@ -326,5 +462,69 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 16,
     color: '#dc2626',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  actionEmoji: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  actionDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  cancelButton: {
+    marginTop: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  cancelText: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '500',
   },
 });
