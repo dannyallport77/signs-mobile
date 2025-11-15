@@ -52,13 +52,6 @@ export interface Business {
   socialMedia?: SocialMediaLinks;
 }
 
-export interface ReviewStats {
-  total: number;
-  lastWeek: number;
-  lastMonth: number;
-  lastYear: number;
-}
-
 export interface PlatformSelection {
   key: string;
   label: string;

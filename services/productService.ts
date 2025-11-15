@@ -62,29 +62,50 @@ function getVariantsForProduct(productId: string, basePrice: number): ProductVar
 
 export const productService = {
   async fetchProducts(): Promise<Product[]> {
-    const token = await AsyncStorage.getItem('authToken');
-    const response = await fetch(`${API_URL}/mobile/products`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      console.log('Fetching products from:', `${API_URL}/mobile/products`);
+      
+      const response = await fetch(`${API_URL}/mobile/products`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to load products');
+      console.log('Products response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Products API error:', errorText);
+        throw new Error(`Failed to load products: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      console.log('Products payload:', JSON.stringify(payload, null, 2));
+
+      if (!payload.success || !payload.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      if (payload.data.length === 0) {
+        throw new Error('No products available. Please contact support.');
+      }
+
+      const items: ApiProduct[] = payload.data.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        imageUrl: product.imageUrl,
+        sku: product.sku,
+        groupType: product.groupType,
+      }));
+
+      return items.map(mapToProduct);
+    } catch (error) {
+      console.error('Product fetch error:', error);
+      throw error;
     }
-
-    const payload = await response.json();
-    const items: ApiProduct[] = payload.data.map((product: any) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      imageUrl: product.imageUrl,
-      sku: product.sku,
-      groupType: product.groupType,
-    }));
-
-    return items.map(mapToProduct);
   },
 };

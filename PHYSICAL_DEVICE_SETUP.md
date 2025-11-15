@@ -131,7 +131,7 @@ Once the app is running on your physical device:
 
 - **Bundle ID**: com.anonymous.signs-mobile
 - **EAS Project ID**: 6870076a-f22c-4acc-bb44-34f08072d01e
-- **API URL**: https://signs-hf12qgnbk-daniels-projects-2508f051.vercel.app/api
+- **API URL**: https://review-signs.co.uk/api
 - **NFC Permission**: Configured ✅
 - **Location Permission**: Configured ✅
 

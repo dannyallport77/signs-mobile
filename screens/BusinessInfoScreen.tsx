@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { ReviewStats, Business, PlatformSelection, SocialMediaLinks } from '../types';
+import { Business, PlatformSelection, SocialMediaLinks } from '../types';
 import { socialMediaService } from '../services/socialMediaService';
 
 const reviewPlatforms: PlatformSelection[] = [
@@ -63,16 +63,6 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
     } finally {
       setLoadingSocial(false);
     }
-  };
-
-  const deriveStats = (): ReviewStats => {
-    const total = business?.userRatingsTotal ?? 0;
-    return {
-      total,
-      lastWeek: Math.round(total * 0.1),
-      lastMonth: Math.round(total * 0.25),
-      lastYear: total,
-    };
   };
 
   const getPlatformUrl = (key: string) => {
@@ -138,10 +128,11 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
     );
   }
 
-  const stats = deriveStats();
-
   const renderCard = (platform: PlatformSelection) => {
     const isSelected = selectedPlatform?.key === platform.key;
+    const platformUrl = getPlatformUrl(platform.key);
+    const hasLink = !!platformUrl && platformUrl !== business.reviewUrl;
+    
     return (
       <TouchableOpacity
         key={platform.key}
@@ -151,17 +142,30 @@ export default function BusinessInfoScreen({ navigation, route }: BusinessInfoSc
         <View style={styles.cardHeader}>
           <Text style={styles.cardEmoji}>{platform.emoji}</Text>
           <Text style={styles.cardTitle}>{platform.label}</Text>
+          {hasLink && <Text style={styles.foundBadge}>✓ Found</Text>}
         </View>
         <Text style={styles.cardDescription}>{platform.description}</Text>
-        <View style={styles.statsRow}>
-          <Text style={styles.statsLabel}>Rating:</Text>
-          <Text style={styles.statsValue}>{business.rating?.toFixed(1) ?? 'N/A'}</Text>
-        </View>
-        <View style={styles.statsList}>
-          <Text style={styles.statsValue}>Total reviews: {stats.total}</Text>
-          <Text style={styles.statsValue}>Last week: {stats.lastWeek}</Text>
-          <Text style={styles.statsValue}>Last month: {stats.lastMonth}</Text>
-        </View>
+        {platform.key === 'google' && (
+          <>
+            <View style={styles.statsRow}>
+              <Text style={styles.statsLabel}>Rating:</Text>
+              <Text style={styles.statsValue}>{business.rating?.toFixed(1) ?? 'N/A'}</Text>
+            </View>
+            <View style={styles.statsList}>
+              <Text style={styles.statsValue}>Total reviews: {business.userRatingsTotal ?? 0}</Text>
+            </View>
+          </>
+        )}
+        {hasLink && platform.key !== 'google' && (
+          <View style={styles.statsList}>
+            <Text style={styles.statsValue}>Profile found and ready</Text>
+          </View>
+        )}
+        {!hasLink && platform.key !== 'google' && (
+          <View style={styles.statsList}>
+            <Text style={styles.notFoundText}>No profile found - will use Google</Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -253,6 +257,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
+    flex: 1,
+  },
+  foundBadge: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600',
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   cardDescription: {
     fontSize: 14,
@@ -275,6 +289,11 @@ const styles = StyleSheet.create({
   },
   statsList: {
     marginTop: 4,
+  },
+  notFoundText: {
+    fontSize: 13,
+    color: '#9ca3af',
+    fontStyle: 'italic',
   },
   loadingRow: {
     flexDirection: 'row',

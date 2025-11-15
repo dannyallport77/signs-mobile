@@ -126,6 +126,6 @@ cd ios && xcodebuild clean && cd ..
 - ✅ Google Maps API key set
 - ✅ Bundle ID: com.anonymous.signs-mobile
 - ✅ Development client enabled
-- ✅ API URL: Production Vercel endpoint
+- ✅ API URL: Production backend at https://review-signs.co.uk/api
 
 You're all set! Just open in Xcode and hit play! 🚀

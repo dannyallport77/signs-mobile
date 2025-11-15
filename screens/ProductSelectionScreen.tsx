@@ -32,15 +32,19 @@ export default function ProductSelectionScreen({ navigation, route }: ProductSel
 
   const loadProducts = async () => {
     setLoading(true);
+    setError(null);
     try {
       const catalog = await productService.fetchProducts();
       setProducts(catalog);
       if (catalog.length > 0) {
         setSelectedProduct(catalog[0]);
         setSelectedVariant(catalog[0].variants[0]);
+      } else {
+        setError('No products are currently available. Please add products in the admin panel.');
       }
     } catch (err: any) {
-      setError(err.message || 'Unable to load products');
+      console.error('Product loading error:', err);
+      setError(err.message || 'Unable to load products. Check your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -122,7 +126,13 @@ export default function ProductSelectionScreen({ navigation, route }: ProductSel
   if (error) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={loadProducts}
+        >
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -291,5 +301,20 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#dc2626',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#4f46e5',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
